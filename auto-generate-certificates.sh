@@ -120,4 +120,26 @@ DONE
 }
 
 
-keygen || rm -rf output
+secretsyaml() {
+    cd output
+    KEYSTORE_B64=$(base64 kafka.server.keystore.jks)
+    TRUSTSTORE_B64=$(base64 kafka.server.truststore.jks)
+    PASSWORD_B64=$(echo ${PASSWD} | base64)
+    echo """
+    apiVersion: v1
+    kind: Secret
+    metadata:
+    name: kafka-store
+    namespace: kafka
+    data:
+    kafka.server.keystore.jks: $KEYSTORE_B64
+    kafka.server.truststore.jks: $TRUSTSTORE_B64
+    truststore-creds: $PASSWORD_B64
+    keystore-creds: $PASSWORD_B64
+    key-creds: $PASSWORD_B64
+    """ > secrets.yaml
+    cd ..
+}
+
+
+keygen || rm -rf output && secretsyaml
