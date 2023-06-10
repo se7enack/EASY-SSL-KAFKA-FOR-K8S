@@ -6,11 +6,7 @@ set -Eeo pipefail
 
 
 EXPIREDAYS=3650
-echo -n "Enter the FQDN: "
-read FQDN
-NAME=$(echo $FQDN | awk -F '.' '{print $1}')
-echo -n "Enter a password to use in order to generate them: "
-read -s PASSWD
+KUBENAMESPACE=kafka
 
 
 keygen() {
@@ -130,7 +126,7 @@ secretyaml() {
     kind: Secret
     metadata:
         name: kafka-store
-        namespace: kafka
+        namespace: $KUBENAMESPACE
     data:
         kafka.server.keystore.jks: $KEYSTORE_B64
         kafka.server.truststore.jks: $TRUSTSTORE_B64
@@ -142,4 +138,9 @@ secretyaml() {
 }
 
 
+echo -n "Enter the FQDN: "
+read FQDN
+NAME=$(echo $FQDN | awk -F '.' '{print $1}')
+echo -n "Enter a password to use in order to generate them: "
+read -s PASSWD
 keygen || rm -rf output && secretsyaml
