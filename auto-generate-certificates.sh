@@ -116,7 +116,7 @@ DONE
 }
 
 
-secretyaml() {
+secretsyaml() {
     cd output
     KEYSTORE_B64=$(base64 kafka.server.keystore.jks)
     TRUSTSTORE_B64=$(base64 kafka.server.truststore.jks)
