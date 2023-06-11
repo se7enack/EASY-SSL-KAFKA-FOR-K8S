@@ -8,6 +8,23 @@ set -Eeo pipefail
 EXPIREDAYS=3650
 KUBENAMESPACE=kafka
 
+##########################################################################################
+# This takes a best guess at getting the basics
+# Comment this out if you want to provide your own
+info=$(curl -s ipinfo.io)
+CITY=$(echo $info | jq -r .city)
+STATE=$(echo $info | jq -r .region)
+COUNTRY=$(echo $info | jq -r .country)
+EMAIL=$(echo $info | jq -r .hostname | rev | awk -F '.' '{print $1"."$2"@ylperon"}' | rev)
+USER=`whoami`
+# # Example:
+# CITY="Boston"
+# STATE="MA"
+# COUNTRY="US"
+# EMAIL="noreply@getburke.com"
+# USER="Stephen Burke"
+##########################################################################################
+
 
 keygen() {
     mkdir -p output
@@ -20,17 +37,17 @@ keygen() {
     expect "*pass*"
     send -- "${PASSWD}\r"
     expect "*Unknown*"
-    send -- "SRE Team\r"
+    send -- "${USER}\r"
     expect "*Unknown*"
-    send -- "SRE\r"
+    send -- "${USER}\r"
     expect "*Unknown*"
-    send -- "se7enack\r"
+    send -- "${USER}\r"
     expect "*Unknown*"
-    send -- "Boston\r" 
+    send -- "${CITY}\r" 
     expect "*Unknown*"
-    send -- "MA\r"
+    send -- "${STATE}\r"
     expect "*Unknown*"
-    send -- "US\r" 
+    send -- "${COUNTRY}\r" 
     expect "*no*"
     send -- "yes\r"
     expect eof
@@ -44,19 +61,19 @@ DONE
     expect "*pass*"
     send -- "${PASSWD}\r"
     expect "Country*"
-    send -- "US\r" 
+    send -- "${COUNTRY}\r" 
     expect "State*"
-    send -- "MA\r"
+    send -- "${STATE}\r"
     expect "*city*"
-    send -- "Boston\r" 
+    send -- "${CITY}\r" 
     expect "*company*"
-    send -- "se7enack\r"
+    send -- "${USER}\r"
     expect "*Unit*"
-    send -- "SRE\r"
+    send -- "${USER}\r"
     expect "*qualified*"
     send -- "${FQDN}\r"
     expect "Email*"
-    send -- "noreply@getburke.com\r"
+    send -- "${EMAIL}\r"
     expect eof
 DONE
     echo "Success"
@@ -141,7 +158,7 @@ data:
 }
 
 
-echo -n "Enter the FQDN: "
+echo;echo -n "Enter the FQDN: "
 read FQDN
 NAME=$(echo $FQDN | awk -F '.' '{print $1}')
 echo -n "Enter a password to use in order to generate them: "
