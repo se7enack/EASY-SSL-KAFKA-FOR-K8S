@@ -14,4 +14,4 @@ kubectl apply -f output/secrets.yaml
 ### Create Kafka and Zookeeper
 kubectl apply -f kafka_and_zookeeper.yaml
 
-## You are done!
+
