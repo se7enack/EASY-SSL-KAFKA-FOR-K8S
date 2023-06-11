@@ -67,7 +67,7 @@ spec:
         - name: KAFKA_ZOOKEEPER_CONNECT
           value: 'zookeeper.kafka.svc.cluster.local:2181'
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-          value: SSL:SSL,PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+          value: SSL:SSL,PLAINTEXT:PLAINTEXT
         - name: KAFKA_SSL_CLIENT_AUTH
           value: "required"
         - name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
