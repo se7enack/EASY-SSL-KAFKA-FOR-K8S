@@ -203,7 +203,20 @@ spec:
               - key: keystore-creds
                 path: keystore-creds            
       containers:
-      - name: broker
+      - name: zookeeper
+        image: bitnami/zookeeper:3.8.1
+        ports:
+        - containerPort: 2181
+        env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: \"2181\"
+        - name: ZOOKEEPER_TICK_TIME
+          value: \"2000\"
+        - name: ZOO_ENABLE_AUTH
+          value: 'no'
+        - name: ALLOW_ANONYMOUS_LOGIN
+          value: 'yes'
+      - name: kafka
         volumeMounts:
             - name: secrets
               mountPath: /bitnami/kafka/config/certs
@@ -264,41 +277,9 @@ spec:
   selector:
     app: kafka
   ports:
-    - protocol: TCP
-      port: 9092
+    - port: 9092
+      protocol: TCP
       targetPort: 9092
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: zookeeper
-  namespace: $KUBENAMESPACE
-  labels:
-    app: zookeeper
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: zookeeper
-  template:
-    metadata:
-      labels:
-        app: zookeeper
-    spec:
-      containers:
-      - name: zookeeper
-        image: bitnami/zookeeper:3.8.1
-        ports:
-        - containerPort: 2181
-        env:
-        - name: ZOOKEEPER_CLIENT_PORT
-          value: \"2181\"
-        - name: ZOOKEEPER_TICK_TIME
-          value: \"2000\"
-        - name: ZOO_ENABLE_AUTH
-          value: 'no'
-        - name: ALLOW_ANONYMOUS_LOGIN
-          value: 'yes'
 ---
 apiVersion: v1
 kind: Service
@@ -307,11 +288,11 @@ metadata:
   namespace: $KUBENAMESPACE
 spec:
   selector:
-    app: zookeeper
+    app: kafka
   ports:
-    - protocol: TCP
-      port: 2181
-      targetPort: 2181 """ > ssl-kafka-zookeeper.yaml
+    - port: 2181
+      protocol: TCP
+      targetPort: 2181""" > ssl-kafka-zookeeper.yaml
     cd ..
 }
 
