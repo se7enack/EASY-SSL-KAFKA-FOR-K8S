@@ -113,8 +113,8 @@ DONE
     expect eof
 DONE
     echo "Success"
-    openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed -days ${EXPIREDAYS} -CAcreateserial -passin pass:${PASSWD}
-    openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed -days ${EXPIREDAYS} -CAcreateserial -passin pass:${PASSWD}
+    openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed -days ${EXPIREDAYS} -CAcreateserial -passin pass:${PASSWD} 2> /dev/null
+    openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed -days ${EXPIREDAYS} -CAcreateserial -passin pass:${PASSWD} 2> /dev/null
     expect <<- DONE
     set timeout -1  
     spawn screen keytool -keystore kafka.keystore.jks -alias CARoot -importcert -file ca-cert
