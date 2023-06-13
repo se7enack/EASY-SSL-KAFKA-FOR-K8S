@@ -13,10 +13,10 @@ STATE=$(echo $info | jq -r .region)
 COUNTRY=$(echo $info | jq -r .country)
 EMAIL=$(echo $info | jq -r .hostname | rev | awk -F '.' '{print $1"."$2"@ylperon"}' | rev)
 USER=`whoami`
+KUBENAMESPACE=kafka
 FQDN="kafka.${KUBENAMESPACE}.svc.cluster.local"
 PASSWD=$(openssl rand -hex 8)
 EXPIREDAYS=3650
-KUBENAMESPACE=kafka
 # # Example:
 # CITY="Boston"
 # STATE="MA"
