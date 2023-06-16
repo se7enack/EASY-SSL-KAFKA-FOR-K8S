@@ -160,17 +160,7 @@ data:
     key-creds: $PASSWORD_B64
 ---
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: 'kafka'
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: \"kafka\"
----
-apiVersion: v1
-kind: Deployment
+kind: StatefulSet
 apiVersion: apps/v1
 metadata:
   name: kafka
@@ -203,19 +193,6 @@ spec:
               - key: keystore-creds
                 path: keystore-creds            
       containers:
-      - name: zookeeper
-        image: bitnami/zookeeper:3.8.1
-        ports:
-        - containerPort: 2181
-        env:
-        - name: ZOOKEEPER_CLIENT_PORT
-          value: '2181'
-        - name: ZOOKEEPER_TICK_TIME
-          value: '2000'
-        - name: ZOO_ENABLE_AUTH
-          value: 'no'
-        - name: ALLOW_ANONYMOUS_LOGIN
-          value: 'yes'
       - name: kafka
         volumeMounts:
             - name: secrets
@@ -269,6 +246,39 @@ spec:
           value: '1'
 ---
 apiVersion: v1
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: zookeeper
+  namespace: $KUBENAMESPACE
+  labels:
+    app: zookeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:          
+      containers:
+      - name: zookeeper
+        image: bitnami/zookeeper:3.8.1
+        ports:
+        - containerPort: 2181
+        env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: '2181'
+        - name: ZOOKEEPER_TICK_TIME
+          value: '2000'
+        - name: ZOO_ENABLE_AUTH
+          value: 'no'
+        - name: ALLOW_ANONYMOUS_LOGIN
+          value: 'yes'
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: kafka
@@ -288,7 +298,7 @@ metadata:
   namespace: $KUBENAMESPACE
 spec:
   selector:
-    app: kafka
+    app: zookeeper
   ports:
     - port: 2181
       protocol: TCP
