@@ -142,7 +142,9 @@ yamlobject() {
     KEYSTORE_B64=$(base64 kafka.keystore.jks)
     TRUSTSTORE_B64=$(base64 kafka.truststore.jks)
     PASSWORD_B64=$(echo ${PASSWD} | base64)
-    echo """apiVersion: v1
+    
+    echo """
+apiVersion: v1
 kind: Namespace
 metadata:
     name: $KUBENAMESPACE
@@ -312,7 +314,8 @@ spec:
   ports:
     - port: 2181
       protocol: TCP
-      targetPort: 2181""" > ssl-kafka-zookeeper.yaml
+      targetPort: 2181
+""" > ssl-kafka-zookeeper.yaml
     cd ..
 }
 
