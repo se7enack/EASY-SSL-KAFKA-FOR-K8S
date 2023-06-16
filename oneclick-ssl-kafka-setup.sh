@@ -190,7 +190,7 @@ spec:
       volumes:
         - name: secrets
           secret:
-            secretName: \"kafka-store\"
+            secretName: 'kafka-store'
             items:
               - key: kafka.keystore.jks
                 path: kafka.keystore.jks
@@ -209,9 +209,9 @@ spec:
         - containerPort: 2181
         env:
         - name: ZOOKEEPER_CLIENT_PORT
-          value: \"2181\"
+          value: '2181'
         - name: ZOOKEEPER_TICK_TIME
-          value: \"2000\"
+          value: '2000'
         - name: ZOO_ENABLE_AUTH
           value: 'no'
         - name: ALLOW_ANONYMOUS_LOGIN
@@ -228,45 +228,45 @@ spec:
         - name: KAFKA_ZOOKEEPER_PROTOCOL
           value: 'PLAINTEXT://0.0.0.0:9092'
         - name: BITNAMI_DEBUG
-          value: \"true\"
+          value: 'true'
         - name: ALLOW_PLAINTEXT_LISTENER
-          value: \"true\"
+          value: 'true'
         - name: KAFKA_ENABLE_KRAFT
-          value: \"false\"
+          value: 'false'
         - name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
-          value: \"\"
+          value: ''
         - name: KAFKA_ADVERTISED_LISTENERS
-          value: 'PLAINTEXT://kafka.kafka.svc.cluster.local:9092,SSL://kafka.kafka.svc.cluster.local:9094'
+          value: \"PLAINTEXT://kafka.${KUBENAMESPACE}.svc.cluster.local:9092,SSL://kafka.${KUBENAMESPACE}.svc.cluster.local:9094\"
         - name: KAFKA_LISTENERS
           value: 'SSL://0.0.0.0:9094,PLAINTEXT://0.0.0.0:9092'
         - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
           value: 'true'
         - name: KAFKA_SSL_KEYSTORE_CREDENTIALS
-          value: keystore-creds
+          value: \"${PASSWD}\"
         - name: KAFKA_SSL_KEY_CREDENTIALS
-          value: key-creds
+          value: \"${PASSWD}\"
         - name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
-          value: truststore-creds          
+          value: \"${PASSWD}\"        
         - name: KAFKA_BROKER_ID
-          value: \"1\"
+          value: '1'
         - name: KAFKA_ZOOKEEPER_CONNECT
-          value: 'zookeeper.${KUBENAMESPACE}.svc.cluster.local:2181'
+          value: \"zookeeper.${KUBENAMESPACE}.svc.cluster.local:2181\"
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
           value: SSL:SSL,PLAINTEXT:PLAINTEXT
         - name: KAFKA_SSL_CLIENT_AUTH
-          value: \"required\"
+          value: 'required'
         - name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
-          value: \"SSL\"
+          value: 'SSL'
         - name: KAFKA_SSL_KEYSTORE_FILENAME
-          value: kafka.keystore.jks    
+          value: '/bitnami/kafka/config/certs/kafka.keystore.jks'   
         - name: KAFKA_SSL_TRUSTSTORE_FILENAME
-          value: kafka.truststore.jks
+          value: '/bitnami/kafka/config/certs/kafka.truststore.jks'
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-          value: \"1\"
+          value: '1'
         - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
-          value: \"1\"
+          value: '1'
         - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
-          value: \"1\"
+          value: '1'
 ---
 apiVersion: v1
 kind: Service
