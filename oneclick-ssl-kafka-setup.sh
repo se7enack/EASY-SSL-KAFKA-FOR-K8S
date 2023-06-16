@@ -3,7 +3,7 @@
 set -Eeo pipefail
 
 # You're Welcome! :) - SB
-
+EPOC=`date +%s`
 ##########################################################################################
 # This takes a best guess at getting the basics
 # Comment this out if you want to provide your own
@@ -177,7 +177,7 @@ spec:
       labels:
         app: kafka
     spec:
-      volumes:
+      volumes:  
         - name: secrets
           secret:
             secretName: 'kafka-store'
@@ -191,17 +191,27 @@ spec:
               - key: truststore-creds
                 path: truststore-creds
               - key: keystore-creds
-                path: keystore-creds            
+                path: keystore-creds
+      initContainers:
+      - name: look-for-zookeeper-service
+        image: ubuntu:latest
+        command: ['sh', '-c', 'until getent hosts zookeeper; do echo waiting for zookeeper; sleep 2; done;']
       containers:
       - name: kafka
-        volumeMounts:
-            - name: secrets
-              mountPath: /bitnami/kafka/config/certs
-              readOnly: true           
+        volumeMounts:     
+        - name: secrets
+          mountPath: /bitnami/kafka/config/certs
+          readOnly: true           
         image: bitnami/kafka:3.4.1
         ports:
         - containerPort: 9092
         env:
+        - name: POD
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name  
+        - name: EPOC
+          value: \"$EPOC\"
         - name: KAFKA_ZOOKEEPER_PROTOCOL
           value: 'PLAINTEXT://0.0.0.0:9092'
         - name: BITNAMI_DEBUG
@@ -224,8 +234,6 @@ spec:
           value: \"${PASSWD}\"
         - name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
           value: \"${PASSWD}\"        
-        - name: KAFKA_BROKER_ID
-          value: '1'
         - name: KAFKA_ZOOKEEPER_CONNECT
           value: \"zookeeper.${KUBENAMESPACE}.svc.cluster.local:2181\"
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
@@ -269,6 +277,8 @@ spec:
         ports:
         - containerPort: 2181
         env:
+        - name: EPOC
+          value: \"$EPOC\"        
         - name: ZOOKEEPER_CLIENT_PORT
           value: '2181'
         - name: ZOOKEEPER_TICK_TIME
