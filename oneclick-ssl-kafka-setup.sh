@@ -2,148 +2,99 @@
 
 set -Eeo pipefail
 
-# You're Welcome! :) - SB
-EPOC=`date +%s`
+
 ##########################################################################################
-# This takes a best guess at getting the basics
-# Comment this out if you want to provide your own
-info=$(curl -s ipinfo.io)
-CITY=$(echo $info | jq -r .city)
-STATE=$(echo $info | jq -r .region)
-COUNTRY=$(echo $info | jq -r .country)
-EMAIL=$(echo $info | jq -r .hostname | rev | awk -F '.' '{print $1"."$2"@ylperon"}' | rev)
-USER=`whoami`
-KUBENAMESPACE=kafka
-FQDN="kafka.${KUBENAMESPACE}.svc.cluster.local"
-PASSWD=$(openssl rand -hex 8)
+EPOC=`date +%s`
 EXPIREDAYS=3650
-# # Example:
-# CITY="Boston"
-# STATE="MA"
-# COUNTRY="US"
-# EMAIL="noreply@getburke.com"
-# USER="ACME Corporation"
-# FQDN="kafka.getburke.com"
-# PASSWD="Str0ngerPwThanThis!"
-# EXPIREDAYS=365
-# KUBENAMESPACE="kafka"
+CITY="Boston"
+STATE="MA"
+COUNTRY="US"
+EMAIL="noreply@getburke.com"
+COMPANY="ACME Corporation"
+USER=`whoami`
+PASSWD=password
+KUBENAMESPACE="kafka"
+FQDN="kafka.${KUBENAMESPACE}.svc.cluster.local"
 ##########################################################################################
 
 
 keygen() {
-    mkdir -p output
-    cd output
-    expect <<- DONE
-    set timeout -1
-    spawn screen keytool -keystore kafka.keystore.jks -alias localhost -keyalg RSA -validity ${EXPIREDAYS} -genkey
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "*Unknown*"
-    send -- "${USER}\r"
-    expect "*Unknown*"
-    send -- "${USER}\r"
-    expect "*Unknown*"
-    send -- "${USER}\r"
-    expect "*Unknown*"
-    send -- "${CITY}\r" 
-    expect "*Unknown*"
-    send -- "${STATE}\r"
-    expect "*Unknown*"
-    send -- "${COUNTRY}\r" 
-    expect "*no*"
-    send -- "yes\r"
-    expect eof
+  rm -rf output
+  mkdir -p output
+  cd output
+  expect <<- DONE
+  set timeout -1
+  spawn keytool -keystore kafka.keystore.jks -alias localhost -keyalg RSA -validity $EXPIREDAYS -genkey -storepass $PASSWD
+  expect "*Unknown*"
+  send -- "${USER}\r"
+  expect "*Unknown*"
+  send -- "SRE\r"
+  expect "*Unknown*"
+  send -- "${COMPANY}\r"
+  expect "*Unknown*"
+  send -- "${CITY}\r" 
+  expect "*Unknown*"
+  send -- "${STATE}\r"
+  expect "*Unknown*"
+  send -- "${COUNTRY}\r" 
+  expect "*no*"
+  send -- "yes\r"
+  spawn openssl req -new -x509 -keyout ca-key -out ca-cert -days $EXPIREDAYS
+  expect "*pass*"
+  send -- "${PASSWD}\r"
+  expect "*pass*"
+  send -- "${PASSWD}\r"
+  expect "Country*"
+  send -- "${COUNTRY}\r"
+  expect "State*"
+  send -- "${STATE}\r"
+  expect "*city*"
+  send -- "${CITY}\r"
+  expect "*company*"
+  send -- "${COMPANY}\r" 
+  expect "*section*"
+  send -- "SRE\r"
+  expect "*qualified*"
+  send -- "${FQDN}\r" 
+  expect "Email*"
+  send -- "${EMAIL}\r" 
+  expect "*no*"
+  send -- "yes\r"
+  spawn keytool -keystore kafka.client.truststore.jks -alias CARoot -importcert -file ca-cert -storepass $PASSWD
+  expect "*no*"
+  send -- "yes\r"
+  spawn keytool -keystore kafka.truststore.jks -alias CARoot -importcert -file ca-cert -storepass $PASSWD
+  expect "*no*"
+  send -- "yes\r"
+  spawn keytool -keystore kafka.keystore.jks -alias localhost -certreq -file cert-file -storepass $PASSWD
+  expect eof
 DONE
-    echo "Success"
-    expect <<- DONE
-    set timeout -1
-    spawn screen openssl req -new -x509 -keyout ca-key -out ca-cert -days ${EXPIREDAYS}
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "Country*"
-    send -- "${COUNTRY}\r" 
-    expect "State*"
-    send -- "${STATE}\r"
-    expect "*city*"
-    send -- "${CITY}\r" 
-    expect "*company*"
-    send -- "${USER}\r"
-    expect "*Unit*"
-    send -- "${USER}\r"
-    expect "*qualified*"
-    send -- "${FQDN}\r"
-    expect "Email*"
-    send -- "${EMAIL}\r"
-    expect eof
+  expect <<- DONE
+  set timeout -1
+  spawn openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed -days $EXPIREDAYS -CAcreateserial
+  expect "*pass*"
+  send -- "${PASSWD}\r"
+  spawn keytool -keystore kafka.keystore.jks -alias CARoot -importcert -file ca-cert -storepass $PASSWD
+  expect "*no*"
+  send -- "yes\r"
+  spawn keytool -keystore kafka.keystore.jks -alias localhost -importcert -file cert-signed -storepass $PASSWD
+  expect eof
 DONE
-    echo "Success"
-    expect <<- DONE
-    set timeout -1  
-    spawn screen keytool -keystore kafka.client.truststore.jks -alias CARoot -importcert -file ca-cert
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "Trust*"
-    send -- "yes\r" 
-    expect eof
-DONE
-    echo "Success"
-    expect <<- DONE
-    set timeout -1  
-    spawn screen keytool -keystore kafka.truststore.jks -alias CARoot -importcert -file ca-cert
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "Trust*"
-    send -- "yes\r" 
-    expect eof
-DONE
-    echo "Success"
-    expect <<- DONE
-    set timeout -1  
-    spawn screen keytool -keystore kafka.keystore.jks -alias localhost -certreq -file cert-file
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect eof
-DONE
-    echo "Success"
-    openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed -days ${EXPIREDAYS} -CAcreateserial -passin pass:${PASSWD} 2> /dev/null
-    openssl x509 -req -CA ca-cert -CAkey ca-key -in cert-file -out cert-signed -days ${EXPIREDAYS} -CAcreateserial -passin pass:${PASSWD} 2> /dev/null
-    expect <<- DONE
-    set timeout -1  
-    spawn screen keytool -keystore kafka.keystore.jks -alias CARoot -importcert -file ca-cert
-    expect "*pass*"
-    send -- "${PASSWD}\r"
-    expect "Trust*"
-    send -- "yes\r"
-    expect eof
-DONE
-    echo "Success"
-    expect <<- DONE
-    set timeout -1  
-    spawn screen keytool -keystore kafka.keystore.jks -alias localhost -importcert -file cert-signed
-    expect "*pass*" 
-    send -- "${PASSWD}\r"
-    expect eof
-DONE
-    echo "Finished"
-    cd ..
+  cd ..
 }
 
 
 yamlobject() {
-    cd output
-    KEYSTORE_B64=$(base64 kafka.keystore.jks)
-    TRUSTSTORE_B64=$(base64 kafka.truststore.jks)
-    PASSWORD_B64=$(echo ${PASSWD} | base64)
-    
-    echo """
+  cd output
+  KEYSTORE_B64=$(base64 kafka.keystore.jks)
+  TRUSTSTORE_B64=$(base64 kafka.truststore.jks)
+  CA_CERT_B64=$(base64 ca-cert)
+  CA_KEY_B64=$(base64 ca-key)
+  TRUSTSTORE_B64=$(base64 kafka.truststore.jks)
+  CLIENT_TRUSTSTORE_B64=$(base64 kafka.client.truststore.jks)
+  PASSWORD_B64=$(echo ${PASSWD} | base64)
+  
+  echo """
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -157,6 +108,9 @@ metadata:
 data:
     kafka.keystore.jks: $KEYSTORE_B64
     kafka.truststore.jks: $TRUSTSTORE_B64
+    kafka.client.truststore.jks: $CLIENT_TRUSTSTORE_B64
+    ca-cert: $CA_CERT_B64
+    ca-key: $CA_KEY_B64
     truststore-creds: $PASSWORD_B64
     keystore-creds: $PASSWORD_B64
     key-creds: $PASSWORD_B64
@@ -186,6 +140,8 @@ spec:
             items:
               - key: kafka.keystore.jks
                 path: kafka.keystore.jks
+              - key: kafka.client.truststore.jks
+                path: kafka.client.truststore.jks
               - key: kafka.truststore.jks
                 path: kafka.truststore.jks
               - key: key-creds
@@ -206,7 +162,7 @@ spec:
           readOnly: true           
         image: bitnami/kafka:3.4.1
         ports:
-        - containerPort: 9092
+        - containerPort: 9094
         env:
         - name: POD
           valueFrom:
@@ -254,6 +210,14 @@ spec:
           value: '1'
         - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
           value: '1'
+        - name: KAFKA_SSL_KEYSTORE_LOCATION
+          value: '/bitnami/kafka/config/certs/kafka.keystore.jks'
+        - name: KAFKA_SSL_TRUSTSTORE_LOCATION
+          value: '/bitnami/kafka/config/certs/kafka.truststore.jks'
+        - name: KAFKA_SSL_KEYSTORE_PASSWORD
+          value: \"${PASSWD}\"
+        - name: KAFKA_SSL_KEY_PASSWORD
+          value: \"${PASSWD}\"
 ---
 apiVersion: v1
 kind: Deployment
@@ -299,9 +263,14 @@ spec:
   selector:
     app: kafka
   ports:
-    - port: 9092
+    - name: http
       protocol: TCP
+      port: 9092
       targetPort: 9092
+    - name: https
+      protocol: TCP
+      port: 9094
+      targetPort: 9094
 ---
 apiVersion: v1
 kind: Service
@@ -312,16 +281,45 @@ spec:
   selector:
     app: zookeeper
   ports:
-    - port: 2181
+    - name: http
       protocol: TCP
+      port: 2181
       targetPort: 2181
+    - name: https
+      protocol: TCP
+      port: 2000
+      targetPort: 2000
 """ > ssl-kafka-zookeeper.yaml
-    cd ..
+  cd ..
 }
 
 
-keygen || rm -rf output && yamlobject && \
+keygen && yamlobject && \
 kubectl apply -f output/ssl-kafka-zookeeper.yaml && \
 echo $PASSWD > output/cert-password.txt && \
 echo;echo 'All set! Certs + Password are located in the output folder';echo
  
+mkdir -p /tmp/client
+kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."ca-cert"' | base64 -d  > /tmp/client/ca-cert
+kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."ca-key"' | base64 -d  > /tmp/client/ca-key
+kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."kafka.keystore.jks"' | base64 -d  > /tmp/client/kafka.keystore.jks
+kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."kafka.truststore.jks"' | base64 -d  > /tmp/client/kafka.truststore.jks
+kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."ca-cert.srl"' | base64 -d  > /tmp/client/ca-cert.srl
+kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."cert-signed"' | base64 -d  > /tmp/client/cert-signed
+kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."cert-file"' | base64 -d  > /tmp/client/cert-file
+kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."kafka.client.truststore.jks"' | base64 -d  > /tmp/client/kafka.client.truststore.jks
+TRUSTSTORECREDS=$(kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."truststore-creds"' | base64 -d)
+KEYSTORECREDS=$(kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."keystore-creds"' | base64 -d)
+KEYCREDS=$(kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."key-creds"' | base64 -d)
+
+echo """security.protocol=SSL
+ssl.keystore.location=/tmp/client/kafka.keystore.jks
+ssl.keystore.password=$KEYSTORECREDS
+ssl.key.password=$KEYCREDS
+ssl.truststore.password=$TRUSTSTORECREDS
+ssl.truststore.location=/tmp/client/kafka.client.truststore.jks
+ssl.endpoint.identification.algorithm=""" > /tmp/client/client.properties
+kubectl run kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.4.1 --namespace $KUBENAMESPACE --command -- sleep infinity 2>/dev/null || true
+sleep 5
+kubectl cp --namespace $KUBENAMESPACE /tmp/client kafka-client:/tmp/.
+rm -rf /tmp/client
