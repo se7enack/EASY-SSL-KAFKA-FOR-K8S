@@ -4,7 +4,7 @@ set -Eeo pipefail
 
 
 ##########################################################################################
-EPOC=`date +%s`
+EPOCH=`date +%s`
 EXPIREDAYS=3650
 CITY="Boston"
 STATE="MA"
@@ -88,10 +88,6 @@ yamlobject() {
   cd output
   KEYSTORE_B64=$(base64 kafka.keystore.jks)
   TRUSTSTORE_B64=$(base64 kafka.truststore.jks)
-  CA_CERT_B64=$(base64 ca-cert)
-  CA_KEY_B64=$(base64 ca-key)
-  TRUSTSTORE_B64=$(base64 kafka.truststore.jks)
-  CLIENT_TRUSTSTORE_B64=$(base64 kafka.client.truststore.jks)
   PASSWORD_B64=$(echo ${PASSWD} | base64)
   
   echo """
@@ -103,17 +99,14 @@ metadata:
 apiVersion: v1
 kind: Secret
 metadata:
-    name: kafka-store
-    namespace: $KUBENAMESPACE
+  name: kafka-store
+  namespace: $KUBENAMESPACE
 data:
-    kafka.keystore.jks: $KEYSTORE_B64
-    kafka.truststore.jks: $TRUSTSTORE_B64
-    kafka.client.truststore.jks: $CLIENT_TRUSTSTORE_B64
-    ca-cert: $CA_CERT_B64
-    ca-key: $CA_KEY_B64
-    truststore-creds: $PASSWORD_B64
-    keystore-creds: $PASSWORD_B64
-    key-creds: $PASSWORD_B64
+  kafka.truststore.jks: $TRUSTSTORE_B64
+  kafka.keystore.jks: $KEYSTORE_B64
+  truststore-creds: $PASSWORD_B64
+  keystore-creds: $PASSWORD_B64
+  key-creds: $PASSWORD_B64
 ---
 apiVersion: v1
 kind: StatefulSet
@@ -140,8 +133,6 @@ spec:
             items:
               - key: kafka.keystore.jks
                 path: kafka.keystore.jks
-              - key: kafka.client.truststore.jks
-                path: kafka.client.truststore.jks
               - key: kafka.truststore.jks
                 path: kafka.truststore.jks
               - key: key-creds
@@ -150,6 +141,10 @@ spec:
                 path: truststore-creds
               - key: keystore-creds
                 path: keystore-creds
+              - key: kafka.truststore.jks
+                path: zookeeper.truststore.jks
+              - key: kafka.keystore.jks
+                path: zookeeper.keystore.jks
       initContainers:
       - name: look-for-zookeeper-service
         image: ubuntu:latest
@@ -168,56 +163,46 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name  
-        - name: EPOC
-          value: \"$EPOC\"
-        - name: KAFKA_ZOOKEEPER_PROTOCOL
-          value: 'PLAINTEXT://0.0.0.0:9092'
+        - name: EPOCH
+          value: \"$EPOCH\"
         - name: BITNAMI_DEBUG
           value: 'true'
-        - name: ALLOW_PLAINTEXT_LISTENER
+        - name: KAFKA_SSL_KEYSTORE_FILENAME
+          value: kafka.keystore.jks
+        - name: KAFKA_SSL_TRUSTSTORE_FILENAME
+          value: kafka.truststore.jks
+        - name: KAFKA_SECURITY_INTER_BROKER_LISTENER_NAME
+          value: SSL
+        - name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+          value: ' '
+        - name: KAFKA_SSL_CLIENT_AUTH
+          value: required
+        - name: KAFKA_AUTHORIZER_CLASS_NAME
+          value: kafka.security.auth.SimpleAclAuthorizer
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: PLAINTEXT:PLAINTEXT,EXTERNAL:SSL
+        - name: KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND
           value: 'true'
+        - name: KAFKA_LISTENERS
+          value: EXTERNAL://:9094,PLAINTEXT://:9092         
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: \"PLAINTEXT://kafka.${KUBENAMESPACE}.svc.cluster.local:9092,EXTERNAL://kafka.${KUBENAMESPACE}.svc.cluster.local:9094\"
         - name: KAFKA_ENABLE_KRAFT
           value: 'false'
-        - name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
-          value: ''
-        - name: KAFKA_ADVERTISED_LISTENERS
-          value: \"PLAINTEXT://kafka.${KUBENAMESPACE}.svc.cluster.local:9092,SSL://kafka.${KUBENAMESPACE}.svc.cluster.local:9094\"
-        - name: KAFKA_LISTENERS
-          value: 'SSL://0.0.0.0:9094,PLAINTEXT://0.0.0.0:9092'
-        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
-          value: 'true'
-        - name: KAFKA_SSL_KEYSTORE_CREDENTIALS
-          value: \"${PASSWD}\"
-        - name: KAFKA_SSL_KEY_CREDENTIALS
-          value: \"${PASSWD}\"
-        - name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
-          value: \"${PASSWD}\"        
         - name: KAFKA_ZOOKEEPER_CONNECT
-          value: \"zookeeper.${KUBENAMESPACE}.svc.cluster.local:2181\"
-        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-          value: SSL:SSL,PLAINTEXT:PLAINTEXT
-        - name: KAFKA_SSL_CLIENT_AUTH
-          value: 'required'
-        - name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
-          value: 'SSL'
-        - name: KAFKA_SSL_KEYSTORE_FILENAME
-          value: '/bitnami/kafka/config/certs/kafka.keystore.jks'   
-        - name: KAFKA_SSL_TRUSTSTORE_FILENAME
-          value: '/bitnami/kafka/config/certs/kafka.truststore.jks'
-        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-          value: '1'
-        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
-          value: '1'
-        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
-          value: '1'
-        - name: KAFKA_SSL_KEYSTORE_LOCATION
-          value: '/bitnami/kafka/config/certs/kafka.keystore.jks'
-        - name: KAFKA_SSL_TRUSTSTORE_LOCATION
-          value: '/bitnami/kafka/config/certs/kafka.truststore.jks'
-        - name: KAFKA_SSL_KEYSTORE_PASSWORD
-          value: \"${PASSWD}\"
-        - name: KAFKA_SSL_KEY_PASSWORD
-          value: \"${PASSWD}\"
+          value: \"zookeeper.${KUBENAMESPACE}.svc.cluster.local:2181\"          
+        - name: KAFKA_ZOOKEEPER_PROTOCOL
+          value: PLAINTEXT
+        - name: ALLOW_PLAINTEXT_LISTENER
+          value: 'true'  
+        - name: KAFKA_INTER_BROKER_LISTENER_NAME
+          value: PLAINTEXT
+        - name: KAFKA_CFG_SSL_KEYSTORE_PASSWORD
+          value: ${PASSWD}
+        - name: KAFKA_CFG_SSL_KEY_PASSWORD
+          value: ${PASSWD}
+        - name: KAFKA_CFG_SSL_TRUSTSTORE_PASSWORD
+          value: ${PASSWD}   
 ---
 apiVersion: v1
 kind: Deployment
@@ -243,8 +228,8 @@ spec:
         ports:
         - containerPort: 2181
         env:
-        - name: EPOC
-          value: \"$EPOC\"        
+        - name: EPOCH
+          value: \"$EPOCH\"        
         - name: ZOOKEEPER_CLIENT_PORT
           value: '2181'
         - name: ZOOKEEPER_TICK_TIME
@@ -299,27 +284,15 @@ kubectl apply -f output/ssl-kafka-zookeeper.yaml && \
 echo $PASSWD > output/cert-password.txt && \
 echo;echo 'All set! Certs + Password are located in the output folder';echo
  
-mkdir -p /tmp/client
-kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."ca-cert"' | base64 -d  > /tmp/client/ca-cert
-kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."ca-key"' | base64 -d  > /tmp/client/ca-key
-kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."kafka.keystore.jks"' | base64 -d  > /tmp/client/kafka.keystore.jks
-kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."kafka.truststore.jks"' | base64 -d  > /tmp/client/kafka.truststore.jks
-kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."ca-cert.srl"' | base64 -d  > /tmp/client/ca-cert.srl
-kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."cert-signed"' | base64 -d  > /tmp/client/cert-signed
-kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."cert-file"' | base64 -d  > /tmp/client/cert-file
-kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."kafka.client.truststore.jks"' | base64 -d  > /tmp/client/kafka.client.truststore.jks
-TRUSTSTORECREDS=$(kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."truststore-creds"' | base64 -d)
-KEYSTORECREDS=$(kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."keystore-creds"' | base64 -d)
-KEYCREDS=$(kubectl get secret kafka-store -n $KUBENAMESPACE -o json | jq -r '."data"."key-creds"' | base64 -d)
-
 echo """security.protocol=SSL
-ssl.keystore.location=/tmp/client/kafka.keystore.jks
-ssl.keystore.password=$KEYSTORECREDS
-ssl.key.password=$KEYCREDS
-ssl.truststore.password=$TRUSTSTORECREDS
-ssl.truststore.location=/tmp/client/kafka.client.truststore.jks
-ssl.endpoint.identification.algorithm=""" > /tmp/client/client.properties
+ssl.keystore.location=/tmp/output/kafka.keystore.jks
+ssl.keystore.password=$PASSWD
+ssl.key.password=$PASSWD
+ssl.truststore.password=$PASSWD
+ssl.truststore.location=/tmp/output/kafka.client.truststore.jks
+ssl.endpoint.identification.algorithm=""" > output/client.properties
 kubectl run kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.4.1 --namespace $KUBENAMESPACE --command -- sleep infinity 2>/dev/null || true
+kubectl run ubuntu-client --restart='Never' --image ubuntu:latest --namespace $KUBENAMESPACE --command -- sleep infinity 2>/dev/null || true
 sleep 5
-kubectl cp --namespace $KUBENAMESPACE /tmp/client kafka-client:/tmp/.
-rm -rf /tmp/client
+kubectl cp --namespace $KUBENAMESPACE `pwd`/output kafka-client:/tmp/.
+ 
