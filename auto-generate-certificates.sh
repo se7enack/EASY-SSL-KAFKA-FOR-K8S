@@ -109,8 +109,8 @@ metadata:
     name: kafka-store
     namespace: $KUBENAMESPACE
 data:
-    kafka.keystore.jks: $KEYSTORE_B64
-    kafka.truststore.jks: $TRUSTSTORE_B64
+    kafka.server.keystore.jks: $KEYSTORE_B64
+    kafka.server.truststore.jks: $TRUSTSTORE_B64
     truststore-creds: $PASSWORD_B64
     keystore-creds: $PASSWORD_B64
     key-creds: $PASSWORD_B64""" > secrets.yaml
