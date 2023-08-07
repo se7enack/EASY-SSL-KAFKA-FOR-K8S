@@ -20,6 +20,7 @@ helm upgrade kafka-ingress ingress-nginx/ingress-nginx \
 --set controller.resources.requests.memory=1M \
 --set controller.resources.requests.cpu=.01 \
 --set controller.config.hide-headers=Server
-sleep 5 
-kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip'
+sleep 10
+export INGRESS_IP=$(kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip')
+echo $INGRESS_IP
  
