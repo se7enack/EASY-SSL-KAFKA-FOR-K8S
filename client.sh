@@ -12,7 +12,7 @@ ssl.endpoint.identification.algorithm=""" > output/client.properties
   kubectl cp --namespace kafka `pwd`/output kafka-client:/tmp/.
 }
 
-x=$(kubectl --namespace kafka get services -o json dca0kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip')
+x=$(kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip')
 PASSWD=$(cat output/cert-password.txt)
 client
 echo $x
