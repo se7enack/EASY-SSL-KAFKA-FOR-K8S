@@ -1,10 +1,46 @@
-kind: Deployment
-apiVersion: apps/v1
+---
+apiVersion: v1
+kind: Service
 metadata:
-  name: kafka
+  name: kafka-service
   namespace: kafka
   labels:
     app: kafka
+spec:
+  selector:
+    app: kafka
+  ports:
+    - name: http0
+      protocol: TCP
+      port: 920
+      targetPort: 920
+    - name: http1
+      protocol: TCP
+      port: 921
+      targetPort: 921
+    - name: http2
+      protocol: TCP
+      port: 922
+      targetPort: 922
+    - name: https0
+      protocol: TCP
+      port: 940
+      targetPort: 940
+    - name: https1
+      protocol: TCP
+      port: 941
+      targetPort: 941
+    - name: https2
+      protocol: TCP
+      port: 942
+      targetPort: 942
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: kafka
 spec:
   replicas: 1
   selector:
@@ -20,89 +56,73 @@ spec:
           secret:
             secretName: "kafka-store"
             items:
-              - key: kafka.server.keystore.jks
+              - key: kafka.keystore.jks
                 path: kafka.keystore.jks
-              - key: kafka.server.truststore.jks
+              - key: kafka.truststore.jks
                 path: kafka.truststore.jks
               - key: key-creds
                 path: key-creds
               - key: truststore-creds
                 path: truststore-creds
               - key: keystore-creds
-                path: keystore-creds            
+                path: keystore-creds         
+      initContainers:
+      - name: look-for-zookeeper-service
+        image: ubuntu:latest
+        command: ['sh', '-c', 'until getent hosts zookeeper-service.kafka.svc.cluster.local; do echo waiting for zookeeper; sleep 2; done;']    
       containers:
-      - name: broker
+      - name: kafka
         volumeMounts:
-            - name: secrets
-              mountPath: /bitnami/kafka/config/certs
-              readOnly: true           
-        image: bitnami/kafka:3.4.1
-        ports:
-        - containerPort: 9092
+          - name: secrets
+            mountPath: /opt/kafka/config/certs
+            readOnly: true 
+        image: ubuntu/kafka:edge
         env:
-        - name: KAFKA_ZOOKEEPER_PROTOCOL
-          value: 'PLAINTEXT://0.0.0.0:9092'
-        - name: BITNAMI_DEBUG
-          value: "true"
-        - name: ALLOW_PLAINTEXT_LISTENER
-          value: "true"
-        - name: KAFKA_ENABLE_KRAFT
-          value: "false"
-        - name: KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
-          value: ""
-        - name: KAFKA_ADVERTISED_LISTENERS
-          value: 'PLAINTEXT://kafka.kafka.svc.cluster.local:9092,SSL://kafka.kafka.svc.cluster.local:9094'
-        - name: KAFKA_LISTENERS
-          value: 'SSL://0.0.0.0:9094,PLAINTEXT://0.0.0.0:9092'
-        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
-          value: 'true'
-        - name: KAFKA_SSL_KEYSTORE_CREDENTIALS
-          value: keystore-creds
-        - name: KAFKA_SSL_KEY_CREDENTIALS
-          value: key-creds
-        - name: KAFKA_SSL_TRUSTSTORE_CREDENTIALS
-          value: truststore-creds          
-        - name: KAFKA_BROKER_ID
-          value: "1"
-        - name: KAFKA_ZOOKEEPER_CONNECT
-          value: 'zookeeper.kafka.svc.cluster.local:2181'
-        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
-          value: SSL:SSL,PLAINTEXT:PLAINTEXT
-        - name: KAFKA_SSL_CLIENT_AUTH
-          value: "required"
-        - name: KAFKA_SECURITY_INTER_BROKER_PROTOCOL
-          value: "SSL"
-        - name: KAFKA_SSL_KEYSTORE_FILENAME
-          value: kafka.server.keystore.jks    
-        - name: KAFKA_SSL_TRUSTSTORE_FILENAME
-          value: kafka.server.truststore.jks
-        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-          value: "1"
-        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
-          value: "1"
-        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
-          value: "1"
+          - name: ZOOKEEPER_HOST
+            value: zookeeper-service.kafka.svc.cluster.local
+        args: ["/etc/kafka/server.properties", "--override", "inter.broker.listener.name=PLAINTEXT", "--override", "ssl.keystore.location=/opt/kafka/config/certs/kafka.keystore.jks", "--override", "ssl.keystore.password=password", "--override", "ssl.key.password=password", "--override", "ssl.truststore.location=/opt/kafka/config/certs/kafka.truststore.jks", "--override", "ssl.truststore.password=password", "--override", "ssl.enabled.protocols=TLSv1.2,TLSv1.1,TLSv1", "--override", "ssl.client.auth=required"]
+        ports:
+        - containerPort: 920
+          name: http0
+          protocol: TCP
+        - containerPort: 921
+          name: http1
+          protocol: TCP
+        - containerPort: 922
+          name: http2
+          protocol: TCP                    
+        - containerPort: 940
+          name: https0
+          protocol: TCP
+        - containerPort: 941
+          name: https1
+          protocol: TCP
+        - containerPort: 942
+          name: https2
+          protocol: TCP          
+        lifecycle:
+          postStart:
+            exec:
+              command: ["bash", "-c", "Y=$(echo ${HOSTNAME} | awk -F '-' '{print $2}') ; echo \"broker.id=${Y}\" >> /etc/kafka/server.properties;echo \"listeners=PLAINTEXT://:92${Y},SSL://:94${Y}\" >> /etc/kafka/server.properties;echo \"advertised.listeners=SSL://20.10.243.124:94${Y}, PLAINTEXT://kafka-service.kafka.svc.cluster.local:92${Y}\" >> /etc/kafka/server.properties"]    
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: kafka
+  name: zookeeper-service
   namespace: kafka
+  labels:
+    app: zookeeper
 spec:
-  selector:
-    app: kafka
   ports:
-    - protocol: TCP
-      port: 9092
-      targetPort: 9092
+  - port: 2181
+  selector:
+    app: zookeeper
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: zookeeper
+  name: zookeeper-deployment
   namespace: kafka
-  labels:
-    app: zookeeper
 spec:
   replicas: 1
   selector:
@@ -115,28 +135,9 @@ spec:
     spec:
       containers:
       - name: zookeeper
-        image: bitnami/zookeeper:3.8.1
+        image: ubuntu/zookeeper:edge
         ports:
         - containerPort: 2181
-        env:
-        - name: ZOOKEEPER_CLIENT_PORT
-          value: "2181"
-        - name: ZOOKEEPER_TICK_TIME
-          value: "2000"
-        - name: ZOO_ENABLE_AUTH
-          value: 'no'
-        - name: ALLOW_ANONYMOUS_LOGIN
-          value: 'yes'
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: zookeeper
-  namespace: kafka
-spec:
-  selector:
-    app: zookeeper
-  ports:
-    - protocol: TCP
-      port: 2181
-      targetPort: 2181
+          name: zookeeper
+          protocol: TCP
+ 
