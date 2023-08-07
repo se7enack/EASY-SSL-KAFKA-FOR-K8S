@@ -19,11 +19,11 @@ kubectl apply -f kafka_and_zookeeper.yaml
 bash ./client.sh
 
 ### View ingress IP
-INGRESSIP=$(kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip');echo $INGRESSIP
+kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip'
 
 ## From inside client
 ### Producer
-kafka-console-producer.sh --producer.config /tmp/output/client.properties --broker-list ${INGRESSIP}:940 --topic test
+kafka-console-producer.sh --producer.config /tmp/output/client.properties --broker-list ${INGRESS_IP}:940 --topic test
 ### Consumer
-kafka-console-consumer.sh --consumer.config /tmp/output/client.properties --bootstrap-server ${INGRESSIP}:940 --topic test --from-beginning
+kafka-console-consumer.sh --consumer.config /tmp/output/client.properties --bootstrap-server ${INGRESS_IP}:940 --topic test --from-beginning
 
