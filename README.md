@@ -1,5 +1,5 @@
 # kafka
-
+An extremely easy and scalable way to deploy SSL enabled Kafka to Kubernetes
 
 ### Automatically Generate Kafka certificates
 ```
