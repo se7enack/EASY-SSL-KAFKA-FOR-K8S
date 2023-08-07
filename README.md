@@ -22,7 +22,7 @@ bash ./client.sh
 kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip'
 
 ## From inside client
-### export var for Ingress IP
+### Export var for Ingress IP
 export INGRESS_IP=ENTER-VALUE-FROM-ABOVE-STEP
 ### Producer
 kafka-console-producer.sh --producer.config /tmp/output/client.properties --broker-list ${INGRESS_IP}:942,${INGRESS_IP}:941,${INGRESS_IP}:940 --topic test
