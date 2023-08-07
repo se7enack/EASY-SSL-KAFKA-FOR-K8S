@@ -3,7 +3,7 @@
 
 ### Automatically Generate Kafka certificates
 ```
-./auto-generate-certificates.sh
+bash ./auto-generate-certificates.sh
 ```
 *Those files are generated to the newly created 'output' directory
 
