@@ -1,8 +1,7 @@
 # kafka
 
 
-## Automatically Generate Kafka certificates
-### Usage:
+### Automatically Generate Kafka certificates
 ./auto-generate-certificates.sh
 ###
 Files are generated to the newly created 'output' directory
