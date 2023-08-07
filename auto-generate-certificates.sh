@@ -122,17 +122,6 @@ echo -n "Enter a password to use in order to generate them: "
 read -s PASSWD
 keygen && secretsyaml
 
-
 kubectl apply -f output/secrets.yaml
-echo $PASSWD > output/cert-password.txt
-echo """security.protocol=SSL
-ssl.keystore.location=/tmp/output/kafka.keystore.jks
-ssl.keystore.password=$PASSWD
-ssl.key.password=$PASSWD
-ssl.truststore.password=$PASSWD
-ssl.truststore.location=/tmp/output/kafka.client.truststore.jks
-ssl.endpoint.identification.algorithm=""" > output/client.properties
-kubectl run kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.4.1 --namespace $KUBENAMESPACE --command -- sleep infinity 2>/dev/null || true
-sleep 5
-kubectl cp --namespace $KUBENAMESPACE `pwd`/output kafka-client:/tmp/.
+
  
