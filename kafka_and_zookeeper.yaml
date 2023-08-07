@@ -103,7 +103,7 @@ spec:
         lifecycle:
           postStart:
             exec:
-              command: ["bash", "-c", "Y=$(echo ${HOSTNAME} | awk -F '-' '{print $2}') ; echo \"broker.id=${Y}\" >> /etc/kafka/server.properties;echo \"listeners=PLAINTEXT://:92${Y},SSL://:94${Y}\" >> /etc/kafka/server.properties;echo \"advertised.listeners=SSL://20.10.243.124:94${Y}, PLAINTEXT://kafka-service.kafka.svc.cluster.local:92${Y}\" >> /etc/kafka/server.properties"]    
+              command: ["bash", "-c", "Y=$(echo ${HOSTNAME} | awk -F '-' '{print $2}') ; echo \"broker.id=${Y}\" >> /etc/kafka/server.properties;echo \"listeners=PLAINTEXT://:92${Y},SSL://:94${Y}\" >> /etc/kafka/server.properties;echo \"advertised.listeners=SSL://${INGRESS_IP}:94${Y}, PLAINTEXT://kafka-service.kafka.svc.cluster.local:92${Y}\" >> /etc/kafka/server.properties"]    
 ---
 apiVersion: v1
 kind: Service
