@@ -34,7 +34,6 @@ spec:
       protocol: TCP
       port: 942
       targetPort: 942
-
 ---
 apiVersion: apps/v1
 kind: StatefulSet
