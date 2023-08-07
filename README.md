@@ -18,7 +18,7 @@ kubectl apply -f kafka_and_zookeeper.yaml
 ### Create test client
 bash ./client.sh
 
-### Get ingress IP
+### View ingress IP
 INGRESSIP=$(kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip');echo $INGRESSIP
 
 ## From inside client
