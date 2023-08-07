@@ -8,22 +8,19 @@ set -Eeo pipefail
 EXPIREDAYS=3650
 KUBENAMESPACE=kafka
 
+# Example DNS kafka-service.kafka.svc.cluster.local
+
 ##########################################################################################
 # This takes a best guess at getting the basics
 # Comment this out if you want to provide your own
-info=$(curl -s ipinfo.io)
-CITY=$(echo $info | jq -r .city)
-STATE=$(echo $info | jq -r .region)
-COUNTRY=$(echo $info | jq -r .country)
-EMAIL=$(echo $info | jq -r .hostname | rev | awk -F '.' '{print $1"."$2"@ylperon"}' | rev)
-USER=`whoami`
-COMPANY="Acme Corp."
+
 # # Example:
-# CITY="Boston"
-# STATE="MA"
-# COUNTRY="US"
-# EMAIL="noreply@getburke.com"
-# USER="Stephen Burke"
+COMPANY="Acme Corp."
+CITY="Boston"
+STATE="MA"
+COUNTRY="US"
+EMAIL="noreply@getburke.com"
+USER="Stephen Burke"
 ##########################################################################################
 
 
@@ -109,8 +106,8 @@ metadata:
     name: kafka-store
     namespace: $KUBENAMESPACE
 data:
-    kafka.server.keystore.jks: $KEYSTORE_B64
-    kafka.server.truststore.jks: $TRUSTSTORE_B64
+    kafka.keystore.jks: $KEYSTORE_B64
+    kafka.truststore.jks: $TRUSTSTORE_B64
     truststore-creds: $PASSWORD_B64
     keystore-creds: $PASSWORD_B64
     key-creds: $PASSWORD_B64""" > secrets.yaml
@@ -124,3 +121,18 @@ NAME=$(echo $FQDN | awk -F '.' '{print $1}')
 echo -n "Enter a password to use in order to generate them: "
 read -s PASSWD
 keygen && secretsyaml
+
+
+kubectl apply -f output/secrets.yaml
+echo $PASSWD > output/cert-password.txt
+echo """security.protocol=SSL
+ssl.keystore.location=/tmp/output/kafka.keystore.jks
+ssl.keystore.password=$PASSWD
+ssl.key.password=$PASSWD
+ssl.truststore.password=$PASSWD
+ssl.truststore.location=/tmp/output/kafka.client.truststore.jks
+ssl.endpoint.identification.algorithm=""" > output/client.properties
+kubectl run kafka-client --restart='Never' --image docker.io/bitnami/kafka:3.4.1 --namespace $KUBENAMESPACE --command -- sleep infinity 2>/dev/null || true
+sleep 5
+kubectl cp --namespace $KUBENAMESPACE `pwd`/output kafka-client:/tmp/.
+ 
