@@ -7,11 +7,6 @@
 ```
 *Those files are generated to the newly created 'output' directory
 
-### Apply the auto-generated secrets yaml to your cluster:
-```
-kubectl apply -f output/secrets.yaml
-```
-
 ### Create ingress
 ```
 bash ./ingress-create.sh
