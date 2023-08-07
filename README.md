@@ -1,7 +1,7 @@
 <img src="https://github.com/se7enack/Easy-SSL-Kafka-for-K8S/blob/main/logo.png?raw=true"  width="33%" height="33%">
 
 
-## Easy SSL Kafka for K8S
+## Easy SSL Kafka for Kubernetes
 An extremely easy and scalable way to deploy SSL enabled Kafka to Kubernetes
 
 ### Automatically Generate Kafka certificates
