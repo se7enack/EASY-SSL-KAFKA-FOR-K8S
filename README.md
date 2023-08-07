@@ -24,7 +24,7 @@ INGRESSIP=$(kubectl --namespace kafka get services -o json dca0kafka-ingress-ing
 
 ## From inside client
 ### Producer
-kafka-console-producer.sh --producer.config /tmp/output/client.properties --broker-list ${INGRESSIP}:9094 --topic test
+kafka-console-producer.sh --producer.config /tmp/output/client.properties --broker-list ${INGRESSIP}:940 --topic test
 ### Consumer
-kafka-console-consumer.sh --consumer.config /tmp/output/client.properties --bootstrap-server ${INGRESSIP}:9094 --topic test --from-beginning
+kafka-console-consumer.sh --consumer.config /tmp/output/client.properties --bootstrap-server ${INGRESSIP}:940 --topic test --from-beginning
 
