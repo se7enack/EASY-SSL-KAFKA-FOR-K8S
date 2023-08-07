@@ -1,7 +1,6 @@
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
-# helm upgrade dca0kafka-ingress ingress-nginx/ingress-nginx \
-helm install dca0kafka-ingress ingress-nginx/ingress-nginx \
+helm upgrade dca0kafka-ingress ingress-nginx/ingress-nginx \
 --version 4.7.0 \
 --atomic \
 --namespace kafka \
@@ -9,9 +8,9 @@ helm install dca0kafka-ingress ingress-nginx/ingress-nginx \
 --set controller.scope.namespace=kafka \
 --set controller.scope.enabled=true \
 --set controller.ingressClass=nginx \
---set tcp.940=kafka-service/kafka:940 \
---set tcp.941=kafka-service/kafka:941 \
---set tcp.942=kafka-service/kafka:942 \
+--set tcp.940=kafka/kafka-service:940 \
+--set tcp.941=kafka/kafka-service:941 \
+--set tcp.942=kafka/kafka-service:942 \
 --set rbac.create=true \
 --set-string controller.config.server-tokens=false \
 --set-string controller.config.use-forwarded-headers=true \
