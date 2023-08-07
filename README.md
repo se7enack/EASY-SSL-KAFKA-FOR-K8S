@@ -30,7 +30,7 @@ kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-contr
 ## From inside client
 ### Export var for Ingress IP
 ```
-export INGRESS_IP=ENTER-VALUE-FROM-ABOVE-STEP
+export INGRESS_IP=REPLACE-WITH-VALUE-FROM-ABOVE-STEP
 ```
 
 ### Producer
