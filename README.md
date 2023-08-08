@@ -20,20 +20,20 @@ bash ./ingress-create.sh
 kubectl apply -f kafka_and_zookeeper.yaml
 ```
 
-### Create test client
+### Create a test client in the namespace
 ```
 bash ./client.sh
 ```
 
-### View ingress IP
+### View ingress IP (take note of the IP returned)
 ```
 kubectl --namespace kafka get services -o json kafka-ingress-ingress-nginx-controller | jq -r '.status.loadBalancer.ingress[0].ip'
 ```
 
-## From inside client
+## From inside the client
 ### Export var for Ingress IP
 ```
-export INGRESS_IP=REPLACE-WITH-VALUE-FROM-ABOVE-STEP
+export INGRESS_IP=REPLACE-WITH-IP-FROM-ABOVE-STEP
 ```
 
 ### Producer
