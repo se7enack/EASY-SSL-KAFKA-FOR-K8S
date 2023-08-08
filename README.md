@@ -45,3 +45,6 @@ kafka-console-producer.sh --producer.config /tmp/output/client.properties --brok
 ```
 kafka-console-consumer.sh --consumer.config /tmp/output/client.properties --bootstrap-server ${INGRESS_IP}:942,${INGRESS_IP}:941,${INGRESS_IP}:940 --topic test --from-beginning
 ```
+
+#
+<img src="https://github.com/se7enack/Easy-SSL-Kafka-for-K8S/blob/main/example.png?raw=true"  width="100%" height="100%">
