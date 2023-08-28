@@ -11,7 +11,6 @@ KUBENAMESPACE=kafka
 # Example DNS kafka-service.kafka.svc.cluster.local
 
 ##########################################################################################
-# This takes a best guess at getting the basics
 # Comment this out if you want to provide your own
 
 # # Example:
