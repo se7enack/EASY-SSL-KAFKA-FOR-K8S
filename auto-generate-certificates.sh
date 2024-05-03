@@ -59,7 +59,7 @@ keygen() {
   send -- "${COMPANY}\r" 
   expect "*section*"
   send -- "SRE\r"
-  expect "*qualified*"
+  expect "*server*"
   send -- "${FQDN}\r" 
   expect "Email*"
   send -- "${EMAIL}\r" 
@@ -91,8 +91,8 @@ DONE
 
 secretsyaml() {
     cd output
-    KEYSTORE_B64=$(base64 kafka.keystore.jks)
-    TRUSTSTORE_B64=$(base64 kafka.truststore.jks)
+    KEYSTORE_B64=$(base64 --input kafka.keystore.jks)
+    TRUSTSTORE_B64=$(base64 --input kafka.truststore.jks)
     PASSWORD_B64=$(echo ${PASSWD} | base64)
     echo """apiVersion: v1
 kind: Namespace
